@@ -1,0 +1,33 @@
+resources:
+  accelerators: A100:1
+  disk_size: 500
+
+setup: |
+  set -ex
+  conda create -n gorilla python=3.10 -y
+  conda activate gorilla
+
+  # Download gorilla
+  git clone https://github.com/ShishirPatil/gorilla.git || true
+  cd gorilla
+
+  # Install dependencies
+  pip install -r requirements.txt
+  pip install transformers torch prompt_toolkit einops accelerate python-dateutil
+
+  # Download the model weights
+  cd inference
+  curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+  sudo apt-get install git-lfs
+  git lfs install
+  git clone https://huggingface.co/gorilla-llm/gorilla-falcon-7b-hf-v0
+
+  # Install ttyd for web serving
+  wget https://github.com/tsl0922/ttyd/releases/download/1.7.2/ttyd.x86_64
+  sudo mv ttyd.x86_64 /usr/local/bin/ttyd
+  sudo chmod +x /usr/local/bin/ttyd
+
+run: |
+  conda activate gorilla
+  cd gorilla/inference
+  ttyd /bin/bash -c "python3 serve/gorilla_falcon_cli.py --model-path gorilla-falcon-7b-hf-v0"
